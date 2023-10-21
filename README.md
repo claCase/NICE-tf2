@@ -43,7 +43,7 @@ f^{-1}: \mathbf{H} \rightarrow \mathbf{X} \Rightarrow f^{-1}_{\theta}(h) = x $$
 Since $f$ must be invertible in order to evaluate the likelihood, update the parameters and invert the samples from the base prior distribution the authors choose to implement 
 and additive coupling rule which takes the following form: 
 1. Partition the initial data space into two partitions $x_{a}\in\mathbb{R}^{D-b}$ and $x_{b}\in\mathbb{R}^{D-a}$
-2. Apply a transformation $g$ only on the right partition:
+2. Apply a transformation $g$ only on one partition:
 ```math
  h_{a} = x_{a} 
 ```
