@@ -95,12 +95,12 @@ The jacobian of this function is diagonal and the resulting determinant is the p
 \end{bmatrix} =
 
 \begin{bmatrix}
- \theta_{11} & \mathbf{0}\\ 
- \mathbf{0} & \theta_{ii} \\ 
+ e^{\theta_{11}} & \mathbf{0}\\ 
+ \mathbf{0} & e^{\theta_{ii}} \\ 
 \end{bmatrix} 
 ```
 ```math
-det(\mathbb{J}) =  \prod_{i}\theta_{ii}
+det(\mathbb{J}) =  \prod_{i} e^{\theta_{ii}}
 ```
 ```math
 log(det(\mathbb{J})) =  \sum_{i}\theta_{ii}
