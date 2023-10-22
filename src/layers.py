@@ -8,7 +8,7 @@ from tensorflow_probability.python.distributions import Normal, Logistic, Indepe
 
 class AdditiveCoupling(Bijector):
     def __init__(
-        self, mlp: Dense, even: bool, validate_args=False, name="additive_coupling"
+            self, mlp: Dense, even: bool, validate_args=False, name="additive_coupling"
     ):
         super(AdditiveCoupling, self).__init__(
             validate_args, forward_min_event_ndims=0, name=name
@@ -33,11 +33,11 @@ class AdditiveCoupling(Bijector):
         return [x1, x2]
 
     def _inverse_log_det_jacobian(
-        self,
-        y,
-        event_ndims=None,
-        name="additive_coupling_inverse_log_det_jacobian",
-        **kwargs
+            self,
+            y,
+            event_ndims=None,
+            name="additive_coupling_inverse_log_det_jacobian",
+            **kwargs
     ):
         return 0.0
 
@@ -56,7 +56,7 @@ class ExpDiagScaling(Bijector):
         return y * tf.exp(-self.scale)
 
     def forward_log_det_jacobian(
-        self, x, event_ndims=None, name="forward_log_det_jacobian", **kwargs
+            self, x, event_ndims=None, name="forward_log_det_jacobian", **kwargs
     ):
         return tf.reduce_sum(self.scale)
 
@@ -87,15 +87,15 @@ class ExpDiagScalingLayer(Layer):
 
 class NICE(Model):
     def __init__(
-        self,
-        output_dim: int = 2,
-        n_couplings: int = 4,
-        hidden_units: Tuple = (10, 5),
-        mode="split",
-        activation="relu",
-        distr="gaussian",
-        name="nice",
-        **kwargs
+            self,
+            output_dim: int = 2,
+            n_couplings: int = 4,
+            hidden_units: Tuple = (10, 5),
+            mode="split",
+            activation="relu",
+            distr="gaussian",
+            name="nice",
+            **kwargs
     ):
         super().__init__(name=name, **kwargs)
         assert distr in ["gaussian", "logistic"], "distribution not supported"
@@ -200,3 +200,22 @@ class NICE(Model):
                 new_tensor, odd_indices, tf.reshape(b, shape=(-1,))
             )
             return new_tensor
+
+    def inpainting(self, masked_inputs, mask, steps):
+        def alpha(i):
+            return 10 / (100 + i)
+
+        assert masked_inputs.shape == mask.shape
+        if not isinstance(masked_inputs, tf.Tensor):
+            masked_inputs = tf.convert_to_tensor(masked_inputs, tf.float32)
+
+        if not isinstance(mask, tf.Tensor):
+            masked_inputs = tf.convert_to_tensor(mask, tf.float32)
+
+        for i in range(steps):
+            with tf.GradientTape() as tape:
+                tape.watch(masked_inputs)
+                ll, _ = self.log_prob(masked_inputs)
+            grads = tape.gradient(ll, masked_inputs)
+            masked_inputs = masked_inputs + alpha(i) * (grads + tf.random.normal(shape=masked_inputs.shape)) * mask
+        return masked_inputs
