@@ -1,6 +1,7 @@
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import matplotlib.pyplot as plt
 import os
+import tensorflow as tf
 
 
 def samples_plot(
@@ -37,3 +38,41 @@ def plot_true_sampled(true, samples, save_path=None, name="True vs Model Samples
     plt.legend(loc="best")
     if save_path is not None:
         plt.savefig(os.path.join(save_path, name + ".png"))
+
+
+def split_mode(inputs, mode):
+    if mode == "split":
+        h1, h2 = tf.split(inputs, 2, axis=-1)
+    elif mode == "even_odd":
+        h1, h2 = inputs[..., ::2], inputs[..., 1::2]
+    else:
+        raise ValueError(f"Mode {mode} not supported")
+    return h1, h2
+
+
+def recombine_mode(inputs, mode):
+    a, b = inputs
+    x, y = tf.shape(a)[0], tf.shape(a)[1]
+    if mode == "split":
+        return tf.concat([a, b], -1)
+    elif mode == "even_odd":
+        new_tensor = tf.zeros(shape=(x, y * 2), dtype=a.dtype)
+        even = tf.range(y) * 2
+        even = tf.tile(even[None, :], (x, 1))
+        odd = even + 1
+        batch_indices = tf.tile(tf.range(x)[:, None], (1, y))
+        even_indices = tf.concat(
+            [tf.reshape(batch_indices, (-1, 1)), tf.reshape(even, (-1, 1))], -1
+        )
+        odd_indices = tf.concat(
+            [tf.reshape(batch_indices, (-1, 1)), tf.reshape(odd, (-1, 1))], -1
+        )
+        new_tensor = tf.tensor_scatter_nd_update(
+            new_tensor, even_indices, tf.reshape(a, shape=(-1,))
+        )
+        new_tensor = tf.tensor_scatter_nd_update(
+            new_tensor, odd_indices, tf.reshape(b, shape=(-1,))
+        )
+        return new_tensor
+    else:
+        raise ValueError(f"Mode {mode} not supported")

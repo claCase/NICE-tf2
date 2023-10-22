@@ -29,7 +29,7 @@ class AdditiveCoupling(Bijector):
             x1, x2 = x2, x1
         return [x1, x2]
 
-    def _inverse_log_det_jacobian(
+    def _forward_log_det_jacobian(
             self,
             y,
             event_ndims=None,
@@ -37,6 +37,34 @@ class AdditiveCoupling(Bijector):
             **kwargs
     ):
         return 0.0
+
+
+class AffineCoupling(Bijector):
+    def __init__(self, scale: Dense, translate: Dense, even: bool, validate_args=False, name="affine_coupling"):
+        super().__init__(validate_args, forward_min_event_ndims=0, name=name)
+        self.scale = scale
+        self.translate = translate
+        self.even = even
+
+    def _forward(self, x):
+        x1, x2 = x[0],  x[1]
+        if not self.even:
+            x1, x2 = x2, x1
+        h1 = x1
+        h2 = x2 * tf.exp(self.scale(x1)) + self.translate(x1)
+        return [h1, h2]
+
+    def _inverse(self, h):
+        h1, h2 = h[0], h[1]
+        x1 = h1
+        x2 = (h2 - self.translate(h1))*tf.exp(-self.scale(h1))
+        if not self.even:
+            x1, x2 = x2, x1
+        return [x1, x2]
+
+    def _forward_log_det_jacobian(self, x, event_ndims=None, name="affine_coupling_log_det_jacobian", **kwargs):
+        x1, x2 = x[0], x[1]
+        return tf.reduce_sum(self.scale(x1))
 
 
 class ExpDiagScaling(Bijector):
@@ -52,7 +80,7 @@ class ExpDiagScaling(Bijector):
     def _inverse(self, y):
         return y * tf.exp(-self.scale)
 
-    def forward_log_det_jacobian(
+    def _forward_log_det_jacobian(
             self, x, event_ndims=None, name="forward_log_det_jacobian", **kwargs
     ):
         return tf.reduce_sum(self.scale)
@@ -75,6 +103,8 @@ class ExpDiagScalingLayer(Layer):
     def forward_log_det_jacobian(self):
         return self.bijector.forward_log_det_jacobian(0)
 
+    def inverse_log_det_jacobian(self):
+        return self.bijector.inverse_log_det_jacobian(0)
     def forward(self, x):
         return self.bijector.forward(x)
 
