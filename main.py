@@ -2,7 +2,7 @@ from sklearn.datasets import make_circles, make_moons
 import tensorflow as tf
 import numpy as np
 import matplotlib.pyplot as plt
-from src import layers
+from src import models
 import os
 from src.utils import plot_true_sampled, samples_plot
 
@@ -12,7 +12,7 @@ SAVE_PATH = os.path.join(os.getcwd(), "figures")
 x, y = make_moons(1000, noise=0.1)
 
 x = tf.convert_to_tensor(x, tf.float32)
-nice = layers.NICE(
+nice = models.NICE(
     output_dim=2,
     n_couplings=5,
     hidden_units=(10, 15, 15),
