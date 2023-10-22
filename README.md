@@ -1,4 +1,4 @@
-# Implementation of Non-Linear Independent Component Analysis (NICE) in TF-2 
+# Implementation of Non-Linear Independent Component Estimation (NICE) in TF-2 
 This repository presents an implementation of the NICE model, as described in the 2014 paper authored by Laurent Dinh,
 David Krueger, and Yoshua Bengio. The NICE model serves as the foundational layer for subsequent normalizing flow models.
 ### Model Explenantion
@@ -40,7 +40,7 @@ f^{-1}: \mathbf{H} \rightarrow \mathbf{X} \Rightarrow f^{-1}_{\theta}(h) = x $$
  \mathbf{x} \sim  f^{-1}(\mathbf{h})
 ```
 #### Coupling function
-Since $f$ must be invertible in order to evaluate the likelihood, update the parameters and invert the samples from the base prior distribution the authors choose to implement 
+Since $f$ must be invertible in order to evaluate the likelihood, update the parameters, and invert the samples from the base prior distribution, the authors choose to implement 
 and additive coupling rule which takes the following form: 
 1. Partition the initial data space into two partitions $x_{a}\in\mathbb{R}^{D-b}$ and $x_{b}\in\mathbb{R}^{D-a}$
 2. Apply a transformation $g$ only on one partition:
