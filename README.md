@@ -39,7 +39,7 @@ f^{-1}: \mathbf{H} \rightarrow \mathbf{X} \Rightarrow f^{-1}_{\theta}(h) = x $$
 ```math
  \mathbf{x} \sim  f^{-1}(\mathbf{h})
 ```
-#### Coupling function
+#### Coupling function (Additive Coupling)
 Since $f$ must be invertible in order to evaluate the likelihood, update the parameters, and invert the samples from the base prior distribution, the authors choose to implement 
 and additive coupling rule which takes the following form: 
 1. Partition the initial data space into two partitions $x_{a}\in\mathbb{R}^{D-b}$ and $x_{b}\in\mathbb{R}^{D-a}$
@@ -69,7 +69,6 @@ The jacobian of this function is lower triangular and has unit determinant since
  \mathbf{I} & \mathbf{0}\\ 
  \frac{\partial{h_{b}}}{\partial{x_{a}}} & \mathbf{I} \\ 
 \end{bmatrix} 
-
 ```
 and the resulting determinant is:
 ```math
@@ -78,6 +77,7 @@ det(\mathbb{J}) =  \mathbf{I} \cdot \mathbf{I}  + \mathbf{0} \cdot \frac{\partia
 ```math
 log(det(\mathbb{J})) =  log(\mathbf{I}) = 0
 ```
+
 #### Scaling function
 To make the function more flexible the authors propose to multiply the output of the final coupling transformation with an invertible function which is applied element wise:
 ```math
@@ -104,6 +104,44 @@ det(\mathbb{J}) =  \prod_{i} e^{\theta_{ii}}
 ```
 ```math
 log(det(\mathbb{J})) =  \sum_{i}\theta_{ii}
+```
+
+##### Coupling Function (Affine Coupling)
+In the paper [RealNVP](https://arxiv.org/abs/1605.08803) the authors combined the addition and scaling couplings to jointly learn to translate and scale the base density space with input dependent translation and scaling parameters. 
+The coupling takes the following form: 
+```math
+h_{a} = x_{a} 
+```
+```math
+h_{b} = x_{b}  \cdot exp(s_{\theta}(x_{a}))  + g_{\theta}(x_{a}) 
+```
+The inverse coupling function will be:
+
+```math
+x_{a} = h_{a}
+```
+```math
+x_{b} = (h_{b} - g_{\theta}(x_{a})) \cdot exp(-s_{\theta}(x_{a}))
+```
+where $g_{\theta}$ and $s_{\theta}$ are neural networks. <br/>
+The jacobian of this function is lower triangular and has unit determinant since:
+```math
+\mathbb{J} =
+\begin{bmatrix}
+ \frac{\partial{h_{a}}}{\partial{x_{a}}} & \frac{\partial{h_{a}}}{\partial{x_{b}}} \\ 
+ \frac{\partial{h_{b}}}{\partial{x_{a}}} & \frac{\partial{h_{b}}}{\partial{x_{b}}} \\ 
+\end{bmatrix} =
+
+\begin{bmatrix}
+ \mathbf{I} & \mathbf{0}\\ 
+ \frac{\partial{h_{b}}}{\partial{x_{a}}} & diag(exp(s_{\theta}(x_{a})) \\ 
+\end{bmatrix} 
+```
+```math
+det(\mathbb{J}) =  \mathbf{I} \cdot diag(exp(s_{\theta}(x_{a})) =  diag(exp(s_{\theta}(x_{a}))
+```
+```math
+log(det(\mathbb{J})) =  \sum_{i} s_{\theta}(x_{a})_{i}
 ```
 ### References
 
