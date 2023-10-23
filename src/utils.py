@@ -5,7 +5,13 @@ import tensorflow as tf
 
 
 def samples_plot(
-        priorxy, prior_samples, posteriorxy, posterior_samples, llxy, save_path=None, name="NICE"
+    priorxy,
+    prior_samples,
+    posteriorxy,
+    posterior_samples,
+    llxy,
+    save_path=None,
+    name="NICE",
 ):
     fig, ax = plt.subplots(2, figsize=(10, 10))
     if name is not None:
@@ -19,9 +25,7 @@ def samples_plot(
 
     ax[1].set_title("Samples From Posterior (data space)")
     img1 = ax[1].scatter(posteriorxy[:, 0], posteriorxy[:, 1], c=llxy, cmap="inferno")
-    ax[1].scatter(
-        posterior_samples[:, 0], posterior_samples[:, 1], color="black", s=3
-    )
+    ax[1].scatter(posterior_samples[:, 0], posterior_samples[:, 1], color="black", s=3)
     divider1 = make_axes_locatable(ax[1])
     cax1 = divider1.append_axes("right", size="5%", pad=0.05)
     fig.colorbar(img1, cax=cax1, orientation="vertical")

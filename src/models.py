@@ -10,15 +10,15 @@ from abc import abstractmethod
 
 class Flow(Model):
     def __init__(
-            self,
-            output_dim: int = 2,
-            n_couplings: int = 4,
-            hidden_units: Tuple = (10, 5),
-            mode="even_odd",
-            activation="relu",
-            distr="logistic",
-            name="Flow",
-            **kwargs
+        self,
+        output_dim: int = 2,
+        n_couplings: int = 4,
+        hidden_units: Tuple = (10, 5),
+        mode="even_odd",
+        activation="relu",
+        distr="logistic",
+        name="Flow",
+        **kwargs
     ):
         super().__init__(name=name, **kwargs)
         assert distr in ["gaussian", "logistic"], "distribution not supported"
@@ -52,7 +52,7 @@ class Flow(Model):
             raise NotImplementedError("Implement build_coupling_transforms method")
         x = inputs
         x = self.split_mode(x)
-        log_det_jac = 0.
+        log_det_jac = 0.0
         for i, coupling in enumerate(self.transforms):
             x = coupling.forward(x)
             log_det_jac = log_det_jac + coupling.forward_log_det_jacobian(x)
@@ -140,7 +140,7 @@ class RealNVPFlow(Flow):
             coupling = AffineCoupling(
                 tf.keras.models.Sequential(scale_layers),
                 tf.keras.models.Sequential(translation_layers),
-                even=bool(i % 2)
+                even=bool(i % 2),
             )
             self.transforms.append(coupling)
         self.scaling = ExpDiagScalingLayer()

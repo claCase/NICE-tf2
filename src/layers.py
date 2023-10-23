@@ -5,7 +5,7 @@ from tensorflow_probability.python.bijectors import Bijector
 
 class AdditiveCoupling(Bijector):
     def __init__(
-            self, mlp: Dense, even: bool, validate_args=False, name="additive_coupling"
+        self, mlp: Dense, even: bool, validate_args=False, name="additive_coupling"
     ):
         super(AdditiveCoupling, self).__init__(
             validate_args, forward_min_event_ndims=0, name=name
@@ -30,17 +30,24 @@ class AdditiveCoupling(Bijector):
         return [x1, x2]
 
     def _forward_log_det_jacobian(
-            self,
-            x,
-            event_ndims=None,
-            name="additive_coupling_inverse_log_det_jacobian",
-            **kwargs
+        self,
+        x,
+        event_ndims=None,
+        name="additive_coupling_inverse_log_det_jacobian",
+        **kwargs
     ):
         return tf.zeros(tf.shape(x))[0]
 
 
 class AffineCoupling(Bijector):
-    def __init__(self, scale: Dense, translate: Dense, even: bool, validate_args=False, name="affine_coupling"):
+    def __init__(
+        self,
+        scale: Dense,
+        translate: Dense,
+        even: bool,
+        validate_args=False,
+        name="affine_coupling",
+    ):
         super().__init__(validate_args, forward_min_event_ndims=0, name=name)
         self.scale = scale
         self.translate = translate
@@ -62,7 +69,9 @@ class AffineCoupling(Bijector):
             x1, x2 = x2, x1
         return [x1, x2]
 
-    def _forward_log_det_jacobian(self, x, event_ndims=None, name="affine_coupling_log_det_jacobian", **kwargs):
+    def _forward_log_det_jacobian(
+        self, x, event_ndims=None, name="affine_coupling_log_det_jacobian", **kwargs
+    ):
         x1, x2 = x[0], x[1]
         return tf.reduce_sum(self.scale(x1), -1)
 
@@ -84,7 +93,7 @@ class ExpDiagScaling(Bijector):
         return y * tf.exp(-self.scale)
 
     def _forward_log_det_jacobian(
-            self, x, event_ndims=None, name="forward_log_det_jacobian", **kwargs
+        self, x, event_ndims=None, name="forward_log_det_jacobian", **kwargs
     ):
         return tf.reduce_sum(self.scale)
 
