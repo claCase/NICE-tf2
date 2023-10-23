@@ -31,12 +31,12 @@ class AdditiveCoupling(Bijector):
 
     def _forward_log_det_jacobian(
             self,
-            y,
+            x,
             event_ndims=None,
             name="additive_coupling_inverse_log_det_jacobian",
             **kwargs
     ):
-        return 0.0
+        return tf.zeros(tf.shape(x))[0]
 
 
 class AffineCoupling(Bijector):
@@ -47,7 +47,7 @@ class AffineCoupling(Bijector):
         self.even = even
 
     def _forward(self, x):
-        x1, x2 = x[0],  x[1]
+        x1, x2 = x[0], x[1]
         if not self.even:
             x1, x2 = x2, x1
         h1 = x1
@@ -57,14 +57,17 @@ class AffineCoupling(Bijector):
     def _inverse(self, h):
         h1, h2 = h[0], h[1]
         x1 = h1
-        x2 = (h2 - self.translate(h1))*tf.exp(-self.scale(h1))
+        x2 = (h2 - self.translate(h1)) * tf.exp(-self.scale(h1))
         if not self.even:
             x1, x2 = x2, x1
         return [x1, x2]
 
     def _forward_log_det_jacobian(self, x, event_ndims=None, name="affine_coupling_log_det_jacobian", **kwargs):
         x1, x2 = x[0], x[1]
-        return tf.reduce_sum(self.scale(x1))
+        return tf.reduce_sum(self.scale(x1), -1)
+
+    def _inverse_log_det_jacobian(self, y):
+        return -self._forward_log_det_jacobian(self._inverse(y))
 
 
 class ExpDiagScaling(Bijector):
@@ -85,6 +88,9 @@ class ExpDiagScaling(Bijector):
     ):
         return tf.reduce_sum(self.scale)
 
+    def _inverse_log_det_jacobian(self, y):
+        return -self._forward_log_det_jacobian(self._inverse(y))
+
 
 class ExpDiagScalingLayer(Layer):
     def __init__(self, **kwargs):
@@ -100,11 +106,12 @@ class ExpDiagScalingLayer(Layer):
         else:
             return self.bijector.forward(inputs)
 
-    def forward_log_det_jacobian(self):
-        return self.bijector.forward_log_det_jacobian(0)
+    def forward_log_det_jacobian(self, x):
+        return self.bijector.forward_log_det_jacobian(x)
 
-    def inverse_log_det_jacobian(self):
-        return self.bijector.inverse_log_det_jacobian(0)
+    def inverse_log_det_jacobian(self, y):
+        return self.bijector.inverse_log_det_jacobian(y)
+
     def forward(self, x):
         return self.bijector.forward(x)
 
