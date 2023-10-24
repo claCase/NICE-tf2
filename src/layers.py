@@ -80,9 +80,9 @@ class AffineCoupling(Bijector):
 
 
 class ExpDiagScaling(Bijector):
-    def __init__(self, scale, **kwargs):
+    def __init__(self, scale, name="exp_scaling"):
         super().__init__(
-            validate_args=False, forward_min_event_ndims=0, name=kwargs.get("name")
+            validate_args=False, forward_min_event_ndims=0, name=name
         )
         self.scale = scale
 
@@ -106,7 +106,7 @@ class ExpDiagScalingLayer(Layer):
         super().__init__(*kwargs)
 
     def build(self, input_shape):
-        scale = self.add_weight(shape=(input_shape[-1],), trainable=True)
+        scale = self.add_weight(shape=(input_shape[-1],), trainable=True, name="scale")
         self.bijector = ExpDiagScaling(scale)
 
     def call(self, inputs, inverse=False, *args, **kwargs):

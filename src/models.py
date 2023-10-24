@@ -47,6 +47,7 @@ class Flow(Model):
     def build_coupling_transforms(self):
         raise NotImplementedError
 
+    @tf.function
     def forward(self, inputs):
         if self.transforms is None or self.scaling is None:
             raise NotImplementedError("Implement build_coupling_transforms method")
@@ -59,6 +60,7 @@ class Flow(Model):
         x = self.recombine_mode(x)
         return self.scaling(x), log_det_jac + self.scaling.forward_log_det_jacobian(x)
 
+    @tf.function
     def inverse(self, inputs):
         if self.transforms is None or self.scaling is None:
             raise NotImplementedError("Implement build_coupling_transforms method")
@@ -77,15 +79,18 @@ class Flow(Model):
         else:
             return self.forward(inputs)[0]
 
+    @tf.function
     def loss_fn(self, x):
         probs, log_sum_det = self.log_prob(x)
         return tf.reduce_mean(probs + log_sum_det)
 
+    @tf.function
     def log_prob(self, x):
         h, log_det_jac = self.forward(x)
         log_prob_prior = self.distr_prior.log_prob(h)
         return log_prob_prior, log_det_jac
 
+    @tf.function
     def train_step(self, data):
         with tf.GradientTape() as tape:
             loss = -self.loss_fn(data)
@@ -94,13 +99,16 @@ class Flow(Model):
         self.loss_tracker.update_state(loss)
         return {"LogLoss": self.loss_tracker.result()}
 
+    @tf.function
     def sample(self, n_samples):
         h = self.distr_prior.sample(n_samples)
         return self.call(h, inverse=True)
 
+    @tf.function
     def split_mode(self, inputs):
         return split_mode(inputs, self.mode)
 
+    @tf.function
     def recombine_mode(self, inputs):
         return recombine_mode(inputs, self.mode)
 

@@ -19,6 +19,7 @@ def samples_plot(
         priorxy = priorxy.numpy()
     if isinstance(llxy, tf.Tensor):
         llxy = llxy.numpy()
+
     xx_shape = int(np.sqrt(priorxy.shape[0]))
     priorxy = np.split(priorxy.reshape(xx_shape, xx_shape, 2), 2, axis=-1)
     priorxx, prioryy = priorxy[0].squeeze(), priorxy[1].squeeze()
@@ -28,7 +29,7 @@ def samples_plot(
     if name is not None:
         fig.suptitle(name)
     ax[0].set_title("Samples From Prior (hidden space)")
-    img0 = ax[0].contourf(priorxx, prioryy, priorzz, cmap="inferno")
+    img0 = ax[0].contourf(priorxx, prioryy, priorzz, levels=100, cmap="inferno")
     ax[0].scatter(prior_samples[:, 0], prior_samples[:, 1], color="black", s=3)
     divider0 = make_axes_locatable(ax[0])
     cax0 = divider0.append_axes("right", size="5%", pad=0.05)
@@ -41,7 +42,7 @@ def samples_plot(
     posteriorxx, posterioryy = posteriorxy[0].squeeze(), posteriorxy[1].squeeze()
 
     ax[1].set_title("Samples From Posterior (data space)")
-    img1 = ax[1].contourf(posteriorxx, posterioryy, priorzz, cmap="inferno")
+    img1 = ax[1].contourf(posteriorxx, posterioryy, priorzz, levels=100, cmap="inferno")
     ax[1].scatter(posterior_samples[:, 0], posterior_samples[:, 1], color="black", s=3)
     divider1 = make_axes_locatable(ax[1])
     cax1 = divider1.append_axes("right", size="5%", pad=0.05)
