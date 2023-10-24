@@ -1,24 +1,26 @@
+import numpy as np
 import tensorflow as tf
 from tensorflow.python.keras.layers import Dense
 from tensorflow.python.keras.models import Model
 from typing import Tuple
-from .layers import AdditiveCoupling, ExpDiagScalingLayer, AffineCoupling
+from .layers import AdditiveCoupling, ExpDiagScalingLayer, AffineCoupling, EvenOddBijector, InverseEvenOddBijector
 from tensorflow_probability.python.distributions import Normal, Logistic, Independent
+from tensorflow_probability.python.bijectors import BatchNormalization
 from .utils import split_mode, recombine_mode
 from abc import abstractmethod
 
 
 class Flow(Model):
     def __init__(
-        self,
-        output_dim: int = 2,
-        n_couplings: int = 4,
-        hidden_units: Tuple = (10, 5),
-        mode="even_odd",
-        activation="relu",
-        distr="logistic",
-        name="Flow",
-        **kwargs
+            self,
+            output_dim: int = 2,
+            n_couplings: int = 4,
+            hidden_units: Tuple = (10, 5),
+            mode="even_odd",
+            activation="relu",
+            distr="logistic",
+            name="Flow",
+            **kwargs
     ):
         super().__init__(name=name, **kwargs)
         assert distr in ["gaussian", "logistic"], "distribution not supported"
@@ -40,7 +42,7 @@ class Flow(Model):
         self.hidden_units = hidden_units
         self.activation = activation
         self.transforms = None
-        self.scaling = None
+
         self.build_coupling_transforms()
 
     @abstractmethod
@@ -49,28 +51,24 @@ class Flow(Model):
 
     @tf.function
     def forward(self, inputs):
-        if self.transforms is None or self.scaling is None:
+        if self.transforms is None:
             raise NotImplementedError("Implement build_coupling_transforms method")
         x = inputs
-        x = self.split_mode(x)
         log_det_jac = 0.0
         for i, coupling in enumerate(self.transforms):
             x = coupling.forward(x)
             log_det_jac = log_det_jac + coupling.forward_log_det_jacobian(x)
-        x = self.recombine_mode(x)
-        return self.scaling(x), log_det_jac + self.scaling.forward_log_det_jacobian(x)
+        return x, log_det_jac
 
     @tf.function
     def inverse(self, inputs):
-        if self.transforms is None or self.scaling is None:
+        if self.transforms is None:
             raise NotImplementedError("Implement build_coupling_transforms method")
-        h = self.scaling(inputs, inverse=True)
-        h = self.split_mode(h)
-        log_det_jac = self.scaling.inverse_log_det_jacobian(inputs)
+        h = inputs
+        log_det_jac = 0.
         for i, coupling in enumerate(reversed(self.transforms)):
             h = coupling.inverse(h)
             log_det_jac = log_det_jac + coupling.inverse_log_det_jacobian(h)
-        h = self.recombine_mode(h)
         return h, log_det_jac
 
     def call(self, inputs, inverse=False, training=None, mask=None):
@@ -82,7 +80,7 @@ class Flow(Model):
     @tf.function
     def loss_fn(self, x):
         probs, log_sum_det = self.log_prob(x)
-        return tf.reduce_mean(probs + log_sum_det)
+        return - tf.reduce_mean(probs + log_sum_det)
 
     @tf.function
     def log_prob(self, x):
@@ -93,7 +91,7 @@ class Flow(Model):
     @tf.function
     def train_step(self, data):
         with tf.GradientTape() as tape:
-            loss = -self.loss_fn(data)
+            loss = self.loss_fn(data)
         grads = tape.gradient(loss, self.trainable_variables)
         self.optimizer.apply_gradients(zip(grads, self.trainable_variables))
         self.loss_tracker.update_state(loss)
@@ -105,13 +103,29 @@ class Flow(Model):
         return self.call(h, inverse=True)
 
     @tf.function
-    def split_mode(self, inputs):
-        return split_mode(inputs, self.mode)
+    def inpainting(self, noised_inputs, noised_mask, n_steps: int):
+        """
+        Function used for denoising and inpainting by updating the input in the direction of maximum likelihood
+        :param noised_inputs: Corrupted Inputs
+        :param noised_mask: Binary mask select the corrupted inputs to update
+        :param n_steps: how many steps to denoise the input
+        :return: denoised input
+        """
 
-    @tf.function
-    def recombine_mode(self, inputs):
-        return recombine_mode(inputs, self.mode)
+        def alpha(i):
+            return 10 / (100 + i)
 
+        if isinstance(noised_inputs, np.ndarray):
+            noised_inputs = tf.convert_to_tensor(noised_inputs, tf.float32)
+
+        for i in range(n_steps):
+            with tf.GradientTape() as tape:
+                tape.watch(noised_inputs)
+                ll = self.loss_fn(noised_inputs)
+            grads = tape.gradient(ll, noised_inputs)
+            noised_inputs += alpha(i) * grads * noised_mask
+        return noised_inputs
+    
 
 class NICEFlow(Flow):
     def __init__(self, *args, **kwargs):
@@ -119,6 +133,7 @@ class NICEFlow(Flow):
 
     def build_coupling_transforms(self):
         self.transforms = []
+        self.transforms.append(EvenOddBijector())
         for i in range(self.n_couplings):
             layers = []
             for unit in self.hidden_units:
@@ -128,7 +143,8 @@ class NICEFlow(Flow):
                 tf.keras.models.Sequential(layers), even=bool(i % 2)
             )
             self.transforms.append(coupling)
-        self.scaling = ExpDiagScalingLayer()
+        self.transforms.append(InverseEvenOddBijector())
+        self.transforms.append(ExpDiagScalingLayer())
 
 
 class RealNVPFlow(Flow):
@@ -137,6 +153,7 @@ class RealNVPFlow(Flow):
 
     def build_coupling_transforms(self):
         self.transforms = []
+        self.transforms.append(EvenOddBijector())
         for i in range(self.n_couplings):
             scale_layers = []
             translation_layers = []
@@ -151,4 +168,7 @@ class RealNVPFlow(Flow):
                 even=bool(i % 2),
             )
             self.transforms.append(coupling)
-        self.scaling = ExpDiagScalingLayer()
+            self.transforms.append(InverseEvenOddBijector())
+            self.transforms.append(BatchNormalization())
+            self.transforms.append(EvenOddBijector())
+        self.transforms.append(InverseEvenOddBijector())

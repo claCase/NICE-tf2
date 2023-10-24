@@ -73,7 +73,7 @@ def split_mode(inputs, mode):
 
 
 def recombine_mode(inputs, mode):
-    a, b = inputs
+    a, b = inputs[0], inputs[1]
     x, y = tf.shape(a)[0], tf.shape(a)[1]
     if mode == "split":
         return tf.concat([a, b], -1)
