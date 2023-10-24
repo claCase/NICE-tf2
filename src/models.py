@@ -103,7 +103,7 @@ class Flow(Model):
         return self.call(h, inverse=True)
 
     @tf.function
-    def inpainting(self, noised_inputs, noised_mask, n_steps: int):
+    def inpainting(self, noised_inputs, noised_mask, n_steps: int, noise_scale=0.2):
         """
         Function used for denoising and inpainting by updating the input in the direction of maximum likelihood
         :param noised_inputs: Corrupted Inputs
@@ -123,9 +123,9 @@ class Flow(Model):
                 tape.watch(noised_inputs)
                 ll = self.loss_fn(noised_inputs)
             grads = tape.gradient(ll, noised_inputs)
-            noised_inputs += alpha(i) * grads * noised_mask
+            noised_inputs += alpha(i) * (grads + tf.random.normal(shape=grads.shape) * noise_scale) * noised_mask
         return noised_inputs
-    
+
 
 class NICEFlow(Flow):
     def __init__(self, *args, **kwargs):
