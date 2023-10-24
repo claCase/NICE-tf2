@@ -148,7 +148,26 @@ log(det(\mathbb{J})) =  \sum_{i} s_{\theta}(x_{a})_{i}
 For further details, please refer to the [NICE paper](https://arxiv.org/abs/1410.8516).
 
 ## Results 
-![Initial Model Samples](https://github.com/claCase/NICE-tf2/blob/master/figures/True%20vs%20Model%20Samples%20-%20Untrained.png)
-![Initial Reconstructed Samples](https://github.com/claCase/NICE-tf2/blob/master/figures/Samples%20from%20Un-Trained%20Model.png)
-![Trained Model Samples](https://github.com/claCase/NICE-tf2/blob/master/figures/True%20vs%20Model%20Samples%20-%20Trained.png)
-![Reconstructed Samples](https://github.com/claCase/NICE-tf2/blob/master/figures/Samples%20from%20Trained%20Model.png)
+### Circle Dataset 
+#### NICE Results
+![NICE Model Samples Circle](https://github.com/claCase/NormalizingFlow/blob/master/figures/circles/NICE%20(Trained)%20-%20True%20vs%20Model%20Samples.png)
+![NICE Model Density Circle](https://github.com/claCase/NormalizingFlow/blob/master/figures/circles/NICE%20-%20Samples%20from%20Trained%20Model.png)
+#### RealNVP Results
+![RealNVP Model Samples Circle](https://github.com/claCase/NormalizingFlow/blob/master/figures/circles/RealNVP%20(Trained)%20-%20True%20vs%20Model%20Samples.png)
+![RealNVP Model Density Circle](https://github.com/claCase/NormalizingFlow/blob/master/figures/circles/RealNVP%20-%20Samples%20from%20Trained%20Model.png)
+
+### Half-Moons Dataset 
+#### NICE Results
+![NICE Model Samples Half Moons](https://github.com/claCase/NormalizingFlow/blob/master/figures/moons/NICE%20(Trained)%20-%20True%20vs%20Model%20Samples.png)
+![NICE Model Density Half Moons](https://github.com/claCase/NormalizingFlow/blob/master/figures/moons/NICE%20-%20Samples%20from%20Trained%20Model.png)
+#### RealNVP Results 
+![RealNVP Model Samples Half Moons](https://github.com/claCase/NormalizingFlow/blob/master/figures/moons/RealNVP%20(Trained)%20-%20True%20vs%20Model%20Samples.png)
+![RealNVP Model Density Half Moons](https://github.com/claCase/NormalizingFlow/blob/master/figures/moons/RealNVP%20-%20Samples%20from%20Trained%20Model.png)
+
+### Spirals Dataset 
+#### NICE Results 
+![NICE Model Samples Sprials](https://github.com/claCase/NormalizingFlow/blob/master/figures/spirals/NICE%20(Trained)%20-%20True%20vs%20Model%20Samples.png)
+![NICE Model Density Spirals](https://github.com/claCase/NormalizingFlow/blob/master/figures/spirals/NICE%20-%20Samples%20from%20Trained%20Model.png)
+#### RealNVP Results 
+![RealNVP Model Samples Spirals](https://github.com/claCase/NormalizingFlow/blob/master/figures/spirals/RealNVP%20(Trained)%20-%20True%20vs%20Model%20Samples.png)
+![RealNVP Model Density Spirals](https://github.com/claCase/NormalizingFlow/blob/master/figures/spirals/RealNVP%20-%20Samples%20from%20Trained%20Model.png)
