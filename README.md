@@ -1,6 +1,6 @@
 # Implementation of Non-Linear Independent Component Estimation (NICE & RealNVP) in TF-2 
-This repository presents an implementation of the NICE model, as described in the 2014 paper authored by Laurent Dinh,
-David Krueger, and Yoshua Bengio. The NICE model serves as the foundational layer for subsequent normalizing flow models.
+This repository presents an implementation in TensorFlow v2 of NICE and RealNVP models, as described in the 2014 paper authored by Laurent Dinh,
+David Krueger, and Yoshua Bengio and in the 2016 paper authored by Laurent Dinh, Jascha Sohl-Dickstein, Samy Bengio. The NICE model serves as the foundational layer for subsequent normalizing flow models.
 ### Model Explenantion
 #### Main Components
 The main idea behind the model is to:
