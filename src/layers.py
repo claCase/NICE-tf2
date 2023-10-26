@@ -107,8 +107,12 @@ class ExpDiagScalingLayer(Layer):
         super().__init__(*kwargs)
 
     def build(self, input_shape):
-        scale = self.add_weight(shape=(input_shape[-1],), trainable=True, name="scale")
-        self.bijector = ExpDiagScaling(scale)
+        if not self.built:
+            scale = self.add_weight(shape=(input_shape[-1],), trainable=True, name="scale")
+            self.bijector = ExpDiagScaling(scale)
+            self.built = True
+        else:
+            pass
 
     def call(self, inputs, inverse=False, *args, **kwargs):
         if inverse:
@@ -117,15 +121,23 @@ class ExpDiagScalingLayer(Layer):
             return self.bijector.forward(inputs)
 
     def forward_log_det_jacobian(self, x):
+        if not self.built:
+            self.build(x.shape)
         return self.bijector.forward_log_det_jacobian(x)
 
     def inverse_log_det_jacobian(self, y):
+        if not self.built:
+            self.build(y.shape)
         return self.bijector.inverse_log_det_jacobian(y)
 
     def forward(self, x):
+        if not self.built:
+            self.build(x.shape)
         return self.bijector.forward(x)
 
     def inverse(self, x):
+        if not self.built:
+            self.build(x.shape)
         return self.bijector.inverse(x)
 
 

@@ -1,13 +1,14 @@
 import numpy as np
 import tensorflow as tf
-from tensorflow.python.keras.layers import Dense
+from tensorflow.python.keras.layers import Dense, Layer
 from tensorflow.python.keras.models import Model
 from typing import Tuple
 from .layers import AdditiveCoupling, ExpDiagScalingLayer, AffineCoupling, EvenOddBijector, InverseEvenOddBijector
-from tensorflow_probability.python.distributions import Normal, Logistic, Independent
+from tensorflow_probability.python.distributions import Normal, Logistic, Independent, OneHotCategorical
 from tensorflow_probability.python.bijectors import BatchNormalization
 from .utils import split_mode, recombine_mode
 from abc import abstractmethod
+from typing import Literal, Union
 
 
 class Flow(Model):
@@ -26,6 +27,7 @@ class Flow(Model):
         assert distr in ["gaussian", "logistic"], "distribution not supported"
         self.output_dim = output_dim
         self.mode = mode
+        self.distr = distr
         assert mode in ["split", "even_odd"]
         if distr == "gaussian":
             self.distr_prior = Independent(
@@ -67,8 +69,8 @@ class Flow(Model):
         h = inputs
         log_det_jac = 0.
         for i, coupling in enumerate(reversed(self.transforms)):
-            h = coupling.inverse(h)
             log_det_jac = log_det_jac + coupling.inverse_log_det_jacobian(h)
+            h = coupling.inverse(h)
         return h, log_det_jac
 
     def call(self, inputs, inverse=False, training=None, mask=None):
@@ -82,7 +84,7 @@ class Flow(Model):
         probs, log_sum_det = self.log_prob(x)
         return - tf.reduce_mean(probs + log_sum_det)
 
-    @tf.function
+    # @tf.function
     def log_prob(self, x):
         h, log_det_jac = self.forward(x)
         log_prob_prior = self.distr_prior.log_prob(h)
@@ -126,30 +128,51 @@ class Flow(Model):
             noised_inputs += alpha(i) * (grads + tf.random.normal(shape=grads.shape) * noise_scale) * noised_mask
         return noised_inputs
 
+    def get_config(self):
+        config = {"output_dim": self.output_dim, "n_couplings": self.n_couplings, "hidden_units": self.hidden_units,
+                  "mode": self.mode, "activation": self.activation, "distr": self.distr
+                  }
+
+        return config
+
 
 class NICEFlow(Flow):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, batch_normalize=True, *args, **kwargs):
+        self.batch_normalize = batch_normalize
+        super(NICEFlow, self).__init__(*args, **kwargs)
+
+    def make_coupling(self, i):
+        layers = []
+        for unit in self.hidden_units:
+            layers.append(Dense(unit, self.activation))
+        layers.append(Dense(self.output_dim // 2, activation="linear"))
+        coupling = AdditiveCoupling(
+            tf.keras.models.Sequential(layers), even=bool(i % 2)
+        )
+        return coupling
 
     def build_coupling_transforms(self):
         self.transforms = []
         self.transforms.append(EvenOddBijector())
         for i in range(self.n_couplings):
-            layers = []
-            for unit in self.hidden_units:
-                layers.append(Dense(unit, self.activation))
-            layers.append(Dense(self.output_dim // 2, activation="linear"))
-            coupling = AdditiveCoupling(
-                tf.keras.models.Sequential(layers), even=bool(i % 2)
-            )
-            self.transforms.append(coupling)
+            self.transforms.append(self.make_coupling(i))
+            if self.batch_normalize:
+                self.transforms.append(InverseEvenOddBijector())
+                self.transforms.append(BatchNormalization())
+                self.transforms.append(EvenOddBijector())
         self.transforms.append(InverseEvenOddBijector())
         self.transforms.append(ExpDiagScalingLayer())
 
+    def get_config(self):
+        config = super(NICEFlow, self).get_config()
+        config.update({"batch_normalize": self.batch_normalize})
+        return config
+
 
 class RealNVPFlow(Flow):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, batch_normalize=True, *args, **kwargs):
+        self.batch_normalize = batch_normalize
+        super(RealNVPFlow, self).__init__(*args, **kwargs)
 
     def build_coupling_transforms(self):
         self.transforms = []
@@ -168,7 +191,13 @@ class RealNVPFlow(Flow):
                 even=bool(i % 2),
             )
             self.transforms.append(coupling)
-            self.transforms.append(InverseEvenOddBijector())
-            self.transforms.append(BatchNormalization())
-            self.transforms.append(EvenOddBijector())
+            if self.batch_normalize:
+                self.transforms.append(InverseEvenOddBijector())
+                self.transforms.append(BatchNormalization())
+                self.transforms.append(EvenOddBijector())
         self.transforms.append(InverseEvenOddBijector())
+
+    def get_config(self):
+        config = super(RealNVPFlow, self).get_config()
+        config.update({"batch_normalize": self.batch_normalize})
+        return config
